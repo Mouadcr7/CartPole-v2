@@ -1,15 +1,54 @@
 import gym
 import numpy as np
 import math
+import time
+from typing import Optional
 from gym import logger 
 from gym.utils.env_checker import check_env
 from gym.envs.classic_control import CartPoleEnv
 
 
 
+
+class Random_agent:
+    def __init__(self, env):
+        self.env = env
+        pass
+
+    def policy(self) :
+        '''
+        Define the policy of the agent, as a random agent it selects a random action given a uniform probability distribution
+        Ouptut : an int corresponding to the selected action : 0 left , 1 right, 2 do nothing
+	    '''
+        return self.env.action_space.sample()
+    
+
+class Simu:
+    def __init__(self, render_mode="human", agent=None, max_steps=None):
+        self.env = CartPole_v2(render_mode)
+        self.obs = self.env.reset()
+        self.agent = Random_agent(self.env) if agent is None else agent
+        self.max_steps = 500 if max_steps is None or max_steps > 500 else max_steps
+        self.step_count = 0 
+
+    def step(self):
+        action = self.agent.policy() 
+        return self.env.step(action)
+    
+    def run_simu(self):
+        while self.step_count < self.max_steps :
+            time.sleep(0.2)
+            self.env.render()
+            self.obs, reward, terminated, truncated, info = self.step()
+            self.step_count += 1
+            if terminated :
+                self.env.close()
+                return
+        
+
 class CartPole_v2(CartPoleEnv):
-    def __init__(self):
-        super().__init__()
+    def __init__(self,render_mode: Optional[str] = None):
+        super().__init__(render_mode)
         self.action_space = gym.spaces.Discrete(3)
 
     def step(self, action):
@@ -73,15 +112,11 @@ class CartPole_v2(CartPoleEnv):
         return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
         
 
-env = CartPole_v2()
-
-#env = gym.make('CartPole-v1')
-x = env.reset()
-print(x)
-x, reward, terminated, truncated, info = env.step(2)
-print(x)
-x, reward, terminated, truncated, info = env.step(2)
-print(x)
+#env = CartPole_v2(render_mode="human")
+#env = gym.make('CartPole-v1',render_mode="human")
 
 
 
+sm = Simu()
+sm.run_simu()
+print(sm.step_count)
