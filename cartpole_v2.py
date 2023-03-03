@@ -47,7 +47,7 @@ class DQL_agent :
         self.target = copy.deepcopy(self.model)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr)
 
-        self.train(epochs = 200, mem_size = 30, batch_size = 20, sync_freq = 20)
+        self.train(epochs = 5000, mem_size = 1000 , batch_size = 200, sync_freq = 500)
 
 
 
@@ -67,7 +67,6 @@ class DQL_agent :
         
     def target_predict(self, s):
         ''' Use target network to make predicitons.'''
-        print(s)
         with torch.no_grad(): 
             return self.target(torch.Tensor(s))
         
@@ -93,11 +92,12 @@ class DQL_agent :
                     # It ensures that next q values are predicted with the target network.
                     q_values_next = self.target_predict(next_state)
                     q_values[action] = reward + gamma * torch.max(q_values_next).item()
-            targets.append(q_values)
+                targets.append(q_values)
             self.update(states, targets)
 
-    def train(self, epochs = 5000, mem_size = 1000, batch_size = 200, sync_freq = 500 ) :
+    def train(self, epochs = 1000, mem_size = 1000, batch_size = 200, sync_freq = 500 ) :
         ''' '''
+        print("Training phase with "+str(epochs)+" epochs. please wait :) ")
         counter = 0
         epsilon = 0.3
         eps_decay=0.99
@@ -126,7 +126,8 @@ class DQL_agent :
                 if terminated or truncated :
                     self.env.close()
                     break
-            
+        print("Training is done. You can test :)")
+
 
     def policy(self, state) :
             '''
@@ -142,14 +143,16 @@ class DQL_agent :
 
 class Simu:
     def __init__(self, render_mode="human", agent=None, max_steps=None):
-        self.env = CartPole_v2(render_mode)
-        self.obs = self.env.reset()
-        self.agent = Random_agent(CartPole_v2()) if agent is None else agent(CartPole_v2())
+        self.agent = Random_agent(CartPole_V2()) if agent is None else agent(CartPole_V2())
         self.max_steps = 500 if max_steps is None or max_steps > 500 else max_steps
         self.step_count = 0 
 
+        self.env = CartPole_V2(render_mode)
+        self.obs = self.env.reset()[0]
+
     def step(self,state):
-        action = self.agent.policy(state) 
+        action = self.agent.policy(state)
+        print(action, end="--") 
         return self.env.step(action)
     
     def run_simu(self):
@@ -163,7 +166,7 @@ class Simu:
                 return
         
 
-class CartPole_v2(CartPoleEnv):
+class CartPole_V2(CartPoleEnv):
     def __init__(self,render_mode: Optional[str] = None):
         super().__init__(render_mode)
         self.action_space = gym.spaces.Discrete(3)
@@ -234,7 +237,7 @@ class CartPole_v2(CartPoleEnv):
 
 
 
-sm = Simu(agent=DQL_agent)
+#sm = Simu(agent=DQL_agent)
 
-sm.run_simu()
-print(sm.step_count)
+#sm.run_simu()
+#print(sm.step_count)
