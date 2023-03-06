@@ -15,6 +15,7 @@ from collections import deque
 class CartPole_V2(CartPoleEnv):
     def __init__(self,render_mode: Optional[str] = None):
         super().__init__(render_mode)
+        # a new action "do nothing" is added
         self.action_space = gym.spaces.Discrete(3)
 
     def step(self, action):
@@ -22,6 +23,7 @@ class CartPole_V2(CartPoleEnv):
         assert self.action_space.contains(action), err_msg
         assert self.state is not None, "Call reset before using step method."
         x, x_dot, theta, theta_dot = self.state
+        # force = 0 if the action is stay (2) 
         force = self.force_mag if action == 1 else -self.force_mag if action == 0 else 0
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
@@ -83,7 +85,7 @@ class Random_agent:
         self.env.reset()
         pass
 
-    def policy(self) :
+    def policy(self,state) :
         '''
         Define the policy of the agent, as a random agent it selects a random action given a uniform probability distribution
         Ouptut : an int corresponding to the selected action : 0 left , 1 right, 2 do nothing
@@ -108,9 +110,10 @@ class DQL_agent :
                             #torch.nn.LeakyReLU(),
                             torch.nn.Linear(hidden_dim,self.action_size)
                     )
+        # the target network
         self.target = copy.deepcopy(self.model)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr)
-
+        # We train the agent
         self.train(epochs = 700, mem_size = 1000 , batch_size = 200, sync_freq = 200)
 
 
@@ -160,12 +163,13 @@ class DQL_agent :
             self.update(states, targets)
 
     def adaptiveEGreedy(self,epsilon,epsilon_min,epsilon_decay):
+        """ changing epsilon's value"""
         if epsilon > epsilon_min:
             epsilon *= epsilon_decay
         return epsilon
 
-    def train(self, epochs = 1000, mem_size = 1000, batch_size = 200, sync_freq = 100 ) :
-        ''' '''
+    def train(self, epochs = 1000, mem_size = 1000, batch_size = 200, sync_freq = 200 ) :
+        '''training the agent using two networks and replay mode'''
         counter = 0
         epsilon = 1
         epsilon_decay=0.995
@@ -211,17 +215,19 @@ class DQL_agent :
 
 class Simu:
     def __init__(self, render_mode="human", agent=None):
+        """ initialize the agent and set the render_mode"""
         self.agent = Random_agent(CartPole_V2()) if agent is None else agent(CartPole_V2())
         self.render_mode = render_mode
 
     def step(self,state):
+        """step forward the environement using the trained agent"""
         action = self.agent.policy(state)
         print(action, end="--") 
         return self.env.step(action)        
 
     
     def run_simu(self, max_steps=None):
-
+        """ run a simulation and show the actions and the score """
         max_steps = 500 if max_steps is None or max_steps > 500 else max_steps
         self.env = CartPole_V2(self.render_mode)
         self.obs = self.env.reset()[0]
